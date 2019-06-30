@@ -1,0 +1,72 @@
+/* PROJECT - ATTRITION ANALYSIS */
+
+/* STEP 1 - IMPORTING DATASET INTO SAS */
+
+FILENAME REFFILE '/home/johnwilliamv0/Training/Project 03_Attrition Analysis_Datasets.xlsx';
+
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=XLSX
+	OUT=John.Attrition_Analysis;
+	GETNAMES=YES;
+RUN;
+
+/* STEP 2 - DATA CLEANSING */
+
+data john.Attrition_Analysis_1;
+set john.attrition_analysis;
+drop f g h i j k l ;
+run;
+
+/* STEP 3 - EXPLORATORY DATA ANALYSIS & DESCRIPTIVE ANALYSIS*/
+
+PROC FREQ DATA=john.attrition_analysis_1;
+TABLE Marital_status  Relocation_Indicator  Retain_Indicator  Sex_Indicator;
+RUN;
+
+
+
+PROC means DATA=john.attrition_analysis_1;
+VAR  Marital_Status   Relocation_Indicator   Sex_Indicator ;
+CLASS retain_indicator;
+RUN;
+
+
+PROC UNIVARIATE DATA = john.attrition_analysis_1;
+TITLE 'Attrition Analysis Project';
+RUN;
+
+proc means data=john.attrition_analysis_1;
+var marital_status sex_indicator relocation_indicator;
+class retain_indicator;
+run;
+
+/* STEP 4 - PERFORM LOGISTIC REGRESSION */
+
+PROC LOGISTIC DATA=john.attrition_analysis_1;
+class marital_status (ref='married' param=ref) sex_indicator(ref='male' param=ref) relocation_indicator (ref='Relocation is the reason to resign
+');
+model retain_indicator (event = '1') = marital_status sex_indicator relocation_indicator /link=logit;
+run;
+
+
+proc logistic data=john.Attrition_Analysis_1;
+model retain_indicator(event='1') = marital_status sex_indicator relocation_indicator/link=logit
+technique=fisher;
+output out = john.attrition_results predicted= Predicted lower= Lower upper= Upper/
+alpha=0.05;
+run;
+
+
+/* STEP 5 & 6 - PERFORM LOGISTIC REGRESSION */
+
+/* CREATING NEW DATASET FOR EMPLOYEES ABOVE CUT OFF PROBABILITY VALUE WHERE PROBABILITY VALUE IS >=.5  */
+
+/* ESTIMATED PROBABILITY IS >=.5  AND HAVING MAX & MIN VALUES*/
+
+
+proc sql;
+create table john.New_Attrition_dataset as
+select *
+from john.Attrition_Results
+where Predicted >.50;
+quit;
